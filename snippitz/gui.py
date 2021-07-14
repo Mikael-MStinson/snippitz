@@ -37,7 +37,7 @@ def click_event(event):
 	global last_mouse_y
 	last_mouse_x = event.x
 	last_mouse_y = event.y
-	circles.append(Circle(event.x, event.y, 100))
+	circles.append(Circle(event.x*(1/scale)-pan_x*(1/scale), event.y*(1/scale)-pan_y*(1/scale), 100))
 	update_canvas()
 
 def scroll_event(event):
