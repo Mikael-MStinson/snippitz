@@ -4,6 +4,7 @@ root = Tk()
 root.title('Node Mapper')
 canvas = Canvas(root, bg='white', width = 1600,height = 900)
 
+dragging = False
 last_mouse_x = 0
 last_mouse_y = 0
 
@@ -37,8 +38,8 @@ class PanZoomHandler:
 		'''
 		old_screen_x, old_screen_y = self.canvas_to_screen_coordinates(focus_x,focus_y)
 		self.zoom_amount += amount
-		if self.zoom_amount < 0.001:
-			self.zoom_amount = 0.001
+		if self.zoom_amount < 0.1:
+			self.zoom_amount = 0.1
 		new_screen_x, new_screen_y = self.canvas_to_screen_coordinates(focus_x,focus_y)
 		self.pan(new_screen_x-old_screen_x,new_screen_y-old_screen_y)
 	
@@ -57,6 +58,22 @@ class PanZoomHandler:
 			When zooming, if the mouse is at 20,-10 and the zoom is at 0.5, then the mouse should be considered to be at 40,-20 in order to interact with the correct part of the canvas. This can be done by multiplying x, y with 1/zoom
 		'''
 		return (x/self.zoom_amount)+self.pan_x, (y/self.zoom_amount)+self.pan_y
+		
+	def screen_to_canvas_scale(self, size):
+		'''
+			This translates the projected size of an object on the screen to the actual size on the canvas depending on the zoom amount.
+			For example, if you have a circle that you want to appear on the screen with a radius of 200px and the camera is zoomed in 2x, then the actual size of the object to draw on the canvas should be 100px.
+			This can be achieved by dividing the size by the zoom_amount
+		
+		'''
+		return size / self.zoom_amount
+		
+	def canvas_to_screen_scale(self, size):
+		'''
+			This translates the actual size of an object on the canvas to the projected size on the screen depending on the zoom amount.
+			For example, if you have a circle with a radius of 100px and the camera is zoomed in 2x, that object should be drawn as having a radius of 200px. This is achieved by multiplying the size by the zoom_amount
+		'''
+		return size * self.zoom_amount
 
 panzoom = PanZoomHandler()
 	
@@ -71,11 +88,11 @@ def update_canvas():
 
 	
 def click_event(event):
-	global last_mouse_x
-	global last_mouse_y
-	last_mouse_x = event.x
-	last_mouse_y = event.y
-	circles.append(Circle(*panzoom.screen_to_canvas_coordinates(event.x,event.y), 100))
+	global dragging
+	if dragging:
+		dragging = False
+	else:
+		circles.append(Circle(*panzoom.screen_to_canvas_coordinates(event.x,event.y), 100))
 	update_canvas()
 
 def scroll_event(event):
@@ -88,13 +105,18 @@ def scroll_event(event):
 def drag_event(event):
 	global last_mouse_x
 	global last_mouse_y
+	global dragging
+	if not dragging: 
+		dragging = True
+		last_mouse_x = event.x
+		last_mouse_y = event.y
 	panzoom.pan(last_mouse_x - event.x, last_mouse_y - event.y)
 	last_mouse_x = event.x
 	last_mouse_y = event.y
 	update_canvas()
 
 canvas.pack(expand = True, fill = BOTH)
-root.bind("<Button-1>", click_event)
+root.bind("<ButtonRelease-1>", click_event)
 root.bind("<MouseWheel>", scroll_event)
 root.bind("<B1-Motion>", drag_event) 
 root.mainloop()
